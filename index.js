@@ -10,6 +10,14 @@ const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 
+process.on("unhandledRejection", (err) => {
+  console.error("UNHANDLED REJECTION:", err);
+});
+
+process.on("uncaughtException", (err) => {
+  console.error("UNCAUGHT EXCEPTION:", err);
+});
+
 // ===== STAFF ROLE IDS =====
 const ROLES = {
   OWNER: "1462451708927152198",
@@ -514,7 +522,7 @@ client.slash.set("addspookycoins", {
 
     // ===== PERMISSION (only owner/co/manager) =====
     if (!isBypass(i.member)) {
-      return i.reply({ content: "❌ No permission", ephemeral: true });
+    return i.reply({ content: "❌ No permission", ephemeral: true });
     }
 
     const target = i.options.getUser("user");
@@ -562,7 +570,7 @@ client.slash.set("removespookycoins", {
 
     // ===== PERMISSION =====
     if (!isBypass(i.member)) {
-      return i.reply({ content: "❌ No permission", ephemeral: true });
+    return i.reply({ content: "❌ No permission", ephemeral: true });
     }
 
     const target = i.options.getUser("user");
@@ -656,8 +664,7 @@ client.slash.set("giveall", {
       }
 
       // small delay (keeps bot responsive)
-      await new Promise(res => setTimeout(res, 5));
-    }
+      await new Promise(r => setTimeout(r, 50));
 
     fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
 
@@ -989,7 +996,7 @@ client.slash.set("shoot", {
     }
 
     // ===== SUCCESS =====
-    const parts = ["Chest", "Leg", "Hand", "Hand"];
+    const parts = ["Chest", "Leg", "Hand"];
     const part = parts[Math.floor(Math.random() * parts.length)];
 
     return i.reply({
@@ -1000,9 +1007,8 @@ client.slash.set("shoot", {
 
 // ===== READY =====
 client.once("ready", async () => {
-  console.log(`✅ Logged in as ${client.user.tag}`);
+  console.log(`Logged in as ${client.user.tag}`);
 
-  // ✅ THIS LINE GOES HERE
   const commands = [...client.slash.values()].map(cmd => ({
     name: cmd.name,
     description: cmd.description,
@@ -1011,13 +1017,7 @@ client.once("ready", async () => {
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-  // clear old
-  await rest.put(
-    Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-    { body: [] }
-  );
-
-  // register new
+  // ✅ ONLY THIS (no clearing before)
   await rest.put(
     Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
     { body: commands }
@@ -1100,9 +1100,7 @@ client.on("messageCreate", async (msg) => {
 
   await msg.channel.send({
     content: gif,
-    allowedMentions: { parse: [] } // prevents weird embed spam
-  });
-});
+    allowedMentions: { parse: [] } // prevents weird e
 
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
