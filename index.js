@@ -71,7 +71,22 @@ client.slash.set("balance", {
   description: "Check your balance",
 
   async execute(i) {
-    return i.reply("💰 Balance system coming soon");
+    const fs = require("fs");
+
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+    const userId = i.user.id;
+
+    if (!db[userId]) {
+      db[userId] = { wallet: 0, bank: 0 };
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+    }
+
+    const user = db[userId];
+
+    return i.reply(
+      `<a:balance:1497983888792752229> You have ${user.wallet} in your wallet\n` +
+      `<:bankeed:1497983802566512691> You have ${user.bank} in your bank`
+    );
   }
 });
 
