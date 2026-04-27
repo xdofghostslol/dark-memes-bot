@@ -68,24 +68,33 @@ function checkCooldown(userId, command, time, member) {
 // ===== SLASH COMMANDS =====
 client.slash.set("balance", {
   name: "balance",
-  description: "Check your balance",
+  description: "Check balance",
+  options: [
+    {
+      name: "user",
+      description: "User to check",
+      type: 6, // USER
+      required: false
+    }
+  ],
 
   async execute(i) {
     const fs = require("fs");
 
-    const db = JSON.parse(fs.readFileSync("./eco.json"));
-    const userId = i.user.id;
+    const target = i.options.getUser("user") || i.user;
 
-    if (!db[userId]) {
-      db[userId] = { wallet: 0, bank: 0 };
-      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+
+    if (!db[target.id]) {
+      db[target.id] = { wallet: 0, bank: 0 };
     }
 
-    const user = db[userId];
+    const wallet = db[target.id].wallet || 0;
+    const bank = db[target.id].bank || 0;
 
     return i.reply(
-      `<a:balance:1497983888792752229> You have ${user.wallet} in your wallet\n` +
-      `<:bankeed:1497983802566512691> You have ${user.bank} in your bank`
+      `<a:balance:1497983888792752229> ${target.username} has in wallet: ${wallet}\n` +
+      `<:bankeed:1497983802566512691> has in bank: ${bank}`
     );
   }
 });
@@ -689,7 +698,7 @@ client.slash.set("announce", {
     // ===== GREY EMBED =====
     const embed = {
       color: 0x2F3136, // 🔥 grey (Discord dark theme style)
-      title: `<:announcement:1496542405405704192> announcement`,
+      title: `<:ann:1496885917288370186> announcement`,
       description: message,
       footer: {
         text: `Announced by ${i.user.username}`
