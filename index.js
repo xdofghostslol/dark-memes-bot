@@ -895,6 +895,109 @@ client.slash.set("avatar", {
   }
 });
 
+client.slash.set("8ball", {
+  name: "8ball",
+  description: "Ask the magic 8ball a question",
+
+  options: [
+    {
+      name: "question",
+      description: "Your question",
+      type: 3,
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const question = i.options.getString("question");
+
+    const responses = [
+      "Yes.",
+      "No.",
+      "Maybe.",
+      "Definitely.",
+      "Absolutely not.",
+      "Ask again later.",
+      "I think so.",
+      "Doubt it.",
+      "Without a doubt.",
+      "Very unlikely.",
+      "Signs point to yes.",
+      "Cannot predict now."
+    ];
+
+    const answer = responses[Math.floor(Math.random() * responses.length)];
+
+    const embed = {
+      color: 0x2F3136,
+      title: "🎱 Magic 8Ball",
+      description:
+        `**Question:** ${question}\n\n` +
+        `**Answer:** ${answer}`
+    };
+
+    return i.reply({ embeds: [embed] });
+  }
+});
+
+const shootCooldown = new Map();
+
+client.slash.set("shoot", {
+  name: "shoot",
+  description: "Try to shoot someone",
+
+  options: [
+    {
+      name: "user",
+      description: "Target user",
+      type: 6,
+      required: true
+    }
+  ],
+
+  async execute(i) {
+
+    const userId = i.user.id;
+
+    // ===== COOLDOWN =====
+    const now = Date.now();
+    const cooldown = 35000;
+
+    if (shootCooldown.has(userId)) {
+      const expire = shootCooldown.get(userId) + cooldown;
+
+      if (now < expire) {
+        const remaining = ((expire - now) / 1000).toFixed(1);
+        return i.reply({
+          content: `⏳ Wait ${remaining}s before shooting again`,
+          ephemeral: true
+        });
+      }
+    }
+
+    shootCooldown.set(userId, now);
+
+    const target = i.options.getUser("user");
+
+    // ===== FAIL OR SUCCESS =====
+    const isFail = Math.random() < 0.66;
+
+    if (isFail) {
+      return i.reply({
+        content: `<:laugh:1496881613659967569> u failed to shoot the ${target} - try again!`
+      });
+    }
+
+    // ===== SUCCESS =====
+    const parts = ["Chest", "Leg", "Hand", "Hand"];
+    const part = parts[Math.floor(Math.random() * parts.length)];
+
+    return i.reply({
+      content: `<:nice:1484839090708025396> Shot ${target} - ${part}`
+    });
+  }
+});
+
 // ===== READY =====
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
@@ -986,30 +1089,188 @@ client.on("messageCreate", async (msg) => {
     content: `<@&${roleId}>`
   });
 });
-  
-client.on("messageCreate", async (msg) => {
+
+  client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
   if (msg.content !== "!ragebait") return;
 
-  // optional: delete command message
   await msg.delete().catch(() => {});
 
-  const gif = "https://tenor.com/m9vL0RN739B.gif"; // replace with your gif
+  const gif = "https://tenor.com/m9vL0RN739B.gif";
 
-  await msg.channel.send({ content: gif });
-}); 
-  
-  // ===== EXAMPLE MOD COMMAND =====
-  if (cmd === "say") {
-    if (!msg.member.permissions.has("ManageMessages")) {
-      return msg.reply("❌ No permission");
-    }
+  await msg.channel.send({
+    content: gif,
+    allowedMentions: { parse: [] } // prevents weird embed spam
+  });
+});
 
-    return msg.channel.send(args.join(" "));
+  const ms = require("ms");
+
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (!msg.content.startsWith("!mute")) return;
+
+  if (!isBypass(msg.member)) return;
+
+  const args = msg.content.split(" ").slice(1);
+
+  if (!args[0]) {
+    return msg.reply("❌ Provide user ID or mention + time + reason");
+  }
+
+  // ===== USER =====
+  const target =
+    msg.mentions.members.first() ||
+    await msg.guild.members.fetch(args[0]).catch(() => null);
+
+  if (!target) return msg.reply("❌ User not found");
+
+  // ===== TIME =====
+  const timeArg = args[1];
+  if (!timeArg) return msg.reply("❌ Provide time (10m, 1h)");
+
+  const duration = ms(timeArg);
+  if (!duration) return msg.reply("❌ Invalid time");
+
+  // ===== REASON =====
+  const reason = args.slice(2).join(" ") || "No reason provided";
+
+  // ===== MUTE =====
+  try {
+    await target.timeout(duration, reason);
+  } catch {
+    return msg.reply("❌ Failed to mute user");
+  }
+
+  // ===== DM USER =====
+  try {
+    const dmEmbed = {
+      color: 0x2F3136,
+      title: "🔇 You have been muted",
+      description:
+        `**Server:** ${msg.guild.name}\n` +
+        `**Time:** ${timeArg}\n` +
+        `**Reason:** ${reason}\n\n` +
+        `Please follow the server rules.`
+    };
+
+    await target.send({ embeds: [dmEmbed] });
+  } catch {
+    // user has DMs off → ignore
+  }
+
+  // ===== MAIN EMBED =====
+  const embed = {
+    color: 0x2F3136,
+    description:
+      `<:muted:1496874136696262826>\n` +
+      `**User muted**\n\n` +
+      `**Time -** ${timeArg}\n` +
+      `**Reason -** ${reason}\n` +
+      `**Responsible staff -** ${msg.author}`
+  };
+
+  await msg.channel.send({ embeds: [embed] });
+
+  // ===== LOG CHANNEL =====
+  const logChannel = msg.guild.channels.cache.get("1479885510255186045");
+
+  if (logChannel) {
+    const logEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: target.user.username,
+        icon_url: target.user.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `🔇 **User Muted**\n\n` +
+        `👤 **User:** ${target}\n` +
+        `⏱️ **Time:** ${timeArg}\n` +
+        `📝 **Reason:** ${reason}\n` +
+        `🛡️ **Staff:** ${msg.author}`
+    };
+
+    logChannel.send({ embeds: [logEmbed] });
   }
 });
 
-// ===== SLASH HANDLER (/)
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (!msg.content.startsWith("!unmute")) return;
+
+  if (!isBypass(msg.member)) return;
+
+  const args = msg.content.split(" ").slice(1);
+
+  if (!args[0]) {
+    return msg.reply("❌ Provide user ID or mention + reason");
+  }
+
+  // ===== USER =====
+  const target =
+    msg.mentions.members.first() ||
+    await msg.guild.members.fetch(args[0]).catch(() => null);
+
+  if (!target) return msg.reply("❌ User not found");
+
+  // ===== REASON =====
+  const reason = args.slice(1).join(" ") || "No reason provided";
+
+  // ===== UNMUTE =====
+  try {
+    await target.timeout(null); // removes timeout
+  } catch {
+    return msg.reply("❌ Failed to unmute user");
+  }
+
+  // ===== DM USER =====
+  try {
+    const dmEmbed = {
+      color: 0x2F3136,
+      title: "🔓 You have been unmuted",
+      description:
+        `**Server:** ${msg.guild.name}\n` +
+        `**Reason:** ${reason}\n\n` +
+        `You can now chat again.`
+    };
+
+    await target.send({ embeds: [dmEmbed] });
+  } catch {
+    // ignore if DMs off
+  }
+
+  // ===== MAIN MESSAGE =====
+  const embed = {
+    color: 0x2F3136,
+    description:
+      `<:unmuted:1496874189397823578> unmuted ${target}\n\n` +
+      `**Reason -** ${reason}`
+  };
+
+  await msg.channel.send({ embeds: [embed] });
+
+  // ===== LOGGING =====
+  const logChannel = msg.guild.channels.cache.get("1479885510255186045");
+
+  if (logChannel) {
+    const logEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: target.user.username,
+        icon_url: target.user.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `🔓 **User Unmuted**\n\n` +
+        `👤 **User:** ${target}\n` +
+        `📝 **Reason:** ${reason}\n` +
+        `🛡️ **Staff:** ${msg.author}`
+    };
+
+    logChannel.send({ embeds: [logEmbed] });
+  }
+});
+  
+  // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
   if (!i.isChatInputCommand()) return;
 
