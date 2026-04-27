@@ -973,31 +973,19 @@ client.on("messageCreate", async (msg) => {
   
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
-  if (!msg.content.startsWith("!pollping")) return;
+  if (msg.content !== "!pollping") return;
 
   if (!isBypass(msg.member)) return;
 
-  const roleId = "1475423332865150986";
-  const args = msg.content.slice("!pollping".length).trim();
+  const roleId = "1475423332865150986"; // QOTD role
 
-  if (!args) {
-    return msg.reply("❌ Provide a poll message");
-  }
+  // optional: delete command message
+  await msg.delete().catch(() => {});
 
-  msg.channel.send({
-    content: `<@&${roleId}>`,
-    embeds: [
-      {
-        color: 0x2F3136,
-        title: "📊 Poll",
-        description: args,
-        footer: {
-          text: `Started by ${msg.author.username}`
-        }
-      }
-    ]
+  await msg.channel.send({
+    content: `<@&${roleId}>`
   });
-}); 
+});
   
   // ===== EXAMPLE MOD COMMAND =====
   if (cmd === "say") {
