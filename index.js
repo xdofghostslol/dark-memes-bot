@@ -950,6 +950,55 @@ if (cmd === "ping") {
   );
 }
 
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (!msg.content.startsWith("!purge")) return;
+
+  if (!isBypass(msg.member)) return;
+
+  const args = msg.content.split(" ");
+  const amount = parseInt(args[1]);
+
+  if (!amount || amount < 1 || amount > 100) {
+    return msg.reply("❌ Provide a number between 1-100");
+  }
+
+  await msg.channel.bulkDelete(amount, true);
+
+  const reply = await msg.channel.send(`🧹 Cleared ${amount} messages`);
+
+  // auto delete message (fake ephemeral)
+  setTimeout(() => reply.delete().catch(() => {}), 3000);
+});
+  
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (!msg.content.startsWith("!pollping")) return;
+
+  if (!isBypass(msg.member)) return;
+
+  const roleId = "1475423332865150986";
+  const args = msg.content.slice("!pollping".length).trim();
+
+  if (!args) {
+    return msg.reply("❌ Provide a poll message");
+  }
+
+  msg.channel.send({
+    content: `<@&${roleId}>`,
+    embeds: [
+      {
+        color: 0x2F3136,
+        title: "📊 Poll",
+        description: args,
+        footer: {
+          text: `Started by ${msg.author.username}`
+        }
+      }
+    ]
+  });
+}); 
+  
   // ===== EXAMPLE MOD COMMAND =====
   if (cmd === "say") {
     if (!msg.member.permissions.has("ManageMessages")) {
