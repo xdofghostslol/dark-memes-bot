@@ -1254,16 +1254,17 @@ client.on("messageCreate", async (msg) => {
 
   if (logChannel) {
     const logEmbed = {
-      color: 0x2F3136,
-      author: {
-        name: target.user.username,
-        icon_url: target.user.displayAvatarURL({ dynamic: true })
-        description:
-        `🔓 **User Unmuted**\n\n` +
-        `👤 **User:** ${target}\n` +
-        `📝 **Reason:** ${reason}\n` +
-        `🛡️ **Staff:** ${msg.author}`
-    };
+  color: 0x2F3136,
+  author: {
+    name: target.user.username,
+    icon_url: target.user.displayAvatarURL({ dynamic: true }), // ✅ FIXED
+  },
+  description:
+    `🔓 **User Unmuted**\n\n` +
+    `👤 **User:** ${target}\n` +
+    `📝 **Reason:** ${reason}\n` +
+    `🛡️ **Staff:** ${msg.author}`
+};
 
     logChannel.send({ embeds: [logEmbed] });
   }
