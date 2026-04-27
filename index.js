@@ -987,6 +987,18 @@ client.on("messageCreate", async (msg) => {
   });
 });
   
+client.on("messageCreate", async (msg) => {
+  if (msg.author.bot) return;
+  if (msg.content !== "!ragebait") return;
+
+  // optional: delete command message
+  await msg.delete().catch(() => {});
+
+  const gif = "https://tenor.com/m9vL0RN739B.gif"; // replace with your gif
+
+  await msg.channel.send({ content: gif });
+}); 
+  
   // ===== EXAMPLE MOD COMMAND =====
   if (cmd === "say") {
     if (!msg.member.permissions.has("ManageMessages")) {
