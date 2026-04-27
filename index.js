@@ -1284,6 +1284,6 @@ client.on("interactionCreate", async (i) => {
     i.reply({ content: "❌ Error", ephemeral: true });
   }
 });
-
+  
 // ===== LOGIN =====
 client.login(TOKEN);
