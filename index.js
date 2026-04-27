@@ -579,6 +579,130 @@ client.slash.set("removespookycoins", {
   }
 });
 
+client.slash.set("giveall", {
+  name: "giveall",
+  description: "Give spooky coins to all members",
+  options: [
+    {
+      name: "amount",
+      description: "Amount to give",
+      type: 4,
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    // ===== PERMISSION =====
+    if (!isBypass(i.member)) {
+      return i.reply({ content: "❌ No permission", ephemeral: true });
+    }
+
+    const amount = i.options.getInteger("amount");
+
+    if (amount <= 0) {
+      return i.reply({ content: "❌ Invalid amount", ephemeral: true });
+    }
+
+    await i.deferReply();
+
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+
+    // ===== FETCH MEMBERS =====
+    const members = await i.guild.members.fetch();
+    const memberArray = [...members.values()];
+
+    const start = Date.now();
+    const TIMEOUT = 60000; // 60 sec
+    const BATCH_SIZE = 25; // 🔥 optimized for your server
+
+    let count = 0;
+
+    for (let i2 = 0; i2 < memberArray.length; i2 += BATCH_SIZE) {
+
+      // ⏱ TIMEOUT CHECK
+      if (Date.now() - start > TIMEOUT) {
+        return i.editReply({
+          embeds: [
+            {
+              color: 0xff0000,
+              description:
+                `<:bruh:1463071943271120937> **Giveall Timed Out**\n\n` +
+                `Processed ${count} members`
+            }
+          ]
+        });
+      }
+
+      const batch = memberArray.slice(i2, i2 + BATCH_SIZE);
+
+      for (const member of batch) {
+        if (member.user.bot) continue;
+
+        if (!db[member.id]) db[member.id] = { wallet: 0, bank: 0 };
+
+        db[member.id].wallet += amount;
+        count++;
+      }
+
+      // small delay (keeps bot responsive)
+      await new Promise(res => setTimeout(res, 5));
+    }
+
+    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+    return i.editReply(
+      `<:mk:1496873898879221882> added \`${amount}\` spooky coins to all the members (${count})`
+    );
+  }
+});
+
+client.slash.set("announce", {
+  name: "announce",
+  description: "Send an announcement",
+  options: [
+    {
+      name: "message",
+      description: "Announcement message",
+      type: 3,
+      required: true
+    },
+    {
+      name: "channel",
+      description: "Channel to send in (optional)",
+      type: 7,
+      required: false
+    }
+  ],
+
+  async execute(i) {
+
+    // ===== PERMISSION =====
+    if (!isBypass(i.member)) {
+      return i.reply({ content: "❌ No permission", ephemeral: true });
+    }
+
+    const message = i.options.getString("message");
+    const channel = i.options.getChannel("channel") || i.channel;
+
+    // ===== GREY EMBED =====
+    const embed = {
+      color: 0x2F3136, // 🔥 grey (Discord dark theme style)
+      title: `<:announcement:1496542405405704192> announcement`,
+      description: message,
+      footer: {
+        text: `Announced by ${i.user.username}`
+      },
+      timestamp: new Date()
+    };
+
+    await channel.send({ embeds: [embed] });
+
+    return i.reply({ content: "✅ Announcement sent", ephemeral: true });
+  }
+});
+
 // ===== READY =====
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
