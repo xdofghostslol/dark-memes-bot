@@ -1104,11 +1104,7 @@ client.on("messageCreate", async (msg) => {
   });
 });
 
-  const ms = require("ms");
-
-
-  
-  // ===== SLASH HANDLER (/)
+// ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
   if (!i.isChatInputCommand()) return;
 
