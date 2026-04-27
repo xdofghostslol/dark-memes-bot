@@ -1094,11 +1094,13 @@ client.on("messageCreate", async (msg) => {
 
   await msg.delete().catch(() => {});
 
-  const gif = "https://tenor.com/m9vL0RN739B.gif";
+  const gif = "https://tenor.com/m9vLORN739B.gif";
 
   await msg.channel.send({
     content: gif,
-    allowedMentions: { parse: [] } // prevents weird e
+    allowedMentions: { parse: [] }
+  });
+}); // ✅ THIS closes the event
 
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
