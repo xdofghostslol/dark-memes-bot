@@ -1106,8 +1106,6 @@ client.on("messageCreate", async (msg) => {
 
   const ms = require("ms");
 
-const ms = require("ms");
-
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
   if (!msg.content.startsWith("!mute")) return;
