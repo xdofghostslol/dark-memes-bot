@@ -90,6 +90,41 @@ client.slash.set("balance", {
   }
 });
 
+client.slash.set("work", {
+  name: "work",
+  description: "Earn spooky coins",
+
+  async execute(i) {
+    const fs = require("fs");
+
+    // ===== COOLDOWN =====
+    const cd = checkCooldown(i.user.id, "work", 46000, i.member);
+    if (cd) {
+      return i.reply({ content: `⏳ Wait ${cd}s`, ephemeral: true });
+    }
+
+    // ===== DATABASE =====
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+    const userId = i.user.id;
+
+    if (!db[userId]) {
+      db[userId] = { wallet: 0, bank: 0 };
+    }
+
+    // ===== RANDOM EARN =====
+    const amount = Math.floor(Math.random() * (175 - 50 + 1)) + 50;
+
+    db[userId].wallet += amount;
+
+    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+    // ===== RESPONSE =====
+    return i.reply(
+      `<:sus:1496881464124510269> You worked and earned ${amount} spooky coins`
+    );
+  }
+});
+
 // ===== READY =====
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
