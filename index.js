@@ -1106,6 +1106,8 @@ client.on("messageCreate", async (msg) => {
 
   const ms = require("ms");
 
+const ms = require("ms");
+
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
   if (!msg.content.startsWith("!mute")) return;
@@ -1114,87 +1116,78 @@ client.on("messageCreate", async (msg) => {
 
   const args = msg.content.split(" ").slice(1);
 
-  if (!args[0]) {
-    return msg.reply("❌ Provide user ID or mention + time + reason");
+  if (!args[0] || !args[1]) {
+    return msg.reply("❌ Usage: !mute <user> <time> <reason>");
   }
 
-  // ===== USER =====
   const target =
     msg.mentions.members.first() ||
     await msg.guild.members.fetch(args[0]).catch(() => null);
 
   if (!target) return msg.reply("❌ User not found");
 
-  // ===== TIME =====
-  const timeArg = args[1];
-  if (!timeArg) return msg.reply("❌ Provide time (10m, 1h)");
+  const duration = ms(args[1]);
+  if (!duration) return msg.reply("❌ Invalid time (10m, 1h)");
 
-  const duration = ms(timeArg);
-  if (!duration) return msg.reply("❌ Invalid time");
-
-  // ===== REASON =====
   const reason = args.slice(2).join(" ") || "No reason provided";
 
-  // ===== MUTE =====
+  // ===== APPLY TIMEOUT =====
   try {
     await target.timeout(duration, reason);
   } catch {
     return msg.reply("❌ Failed to mute user");
   }
 
-  // ===== DM USER =====
+  // ===== DM =====
   try {
-    const dmEmbed = {
+    await target.send({
+      embeds: [{
+        color: 0x2F3136,
+        title: "🔇 You have been muted",
+        description:
+          `**Server:** ${msg.guild.name}\n` +
+          `**Time:** ${args[1]}\n` +
+          `**Reason:** ${reason}`
+      }]
+    });
+  } catch {}
+
+  // ===== MAIN MESSAGE =====
+  await msg.channel.send({
+    embeds: [{
       color: 0x2F3136,
-      title: "🔇 You have been muted",
       description:
-        `**Server:** ${msg.guild.name}\n` +
-        `**Time:** ${timeArg}\n` +
-        `**Reason:** ${reason}\n\n` +
-        `Please follow the server rules.`
-    };
+        `<:muted:1496874136696262826>\n` +
+        `**User muted**\n\n` +
+        `**Time -** ${args[1]}\n` +
+        `**Reason -** ${reason}\n` +
+        `**Responsible staff -** ${msg.author}`
+    }]
+  });
 
-    await target.send({ embeds: [dmEmbed] });
-  } catch {
-    // user has DMs off → ignore
-  }
-
-  // ===== MAIN EMBED =====
-  const embed = {
-    color: 0x2F3136,
-    description:
-      `<:muted:1496874136696262826>\n` +
-      `**User muted**\n\n` +
-      `**Time -** ${timeArg}\n` +
-      `**Reason -** ${reason}\n` +
-      `**Responsible staff -** ${msg.author}`
-  };
-
-  await msg.channel.send({ embeds: [embed] });
-
-  // ===== LOG CHANNEL =====
+  // ===== LOG =====
   const logChannel = msg.guild.channels.cache.get("1479885510255186045");
 
   if (logChannel) {
-    const logEmbed = {
-      color: 0x2F3136,
-      author: {
-        name: target.user.username,
-        icon_url: target.user.displayAvatarURL({ dynamic: true })
-      },
-      description:
-        `🔇 **User Muted**\n\n` +
-        `👤 **User:** ${target}\n` +
-        `⏱️ **Time:** ${timeArg}\n` +
-        `📝 **Reason:** ${reason}\n` +
-        `🛡️ **Staff:** ${msg.author}`
-    };
-
-    logChannel.send({ embeds: [logEmbed] });
+    await logChannel.send({
+      embeds: [{
+        color: 0x2F3136,
+        author: {
+          name: target.user.username,
+          icon_url: target.user.displayAvatarURL({ dynamic: true })
+        },
+        description:
+          `🔇 **User Muted**\n\n` +
+          `👤 User: ${target}\n` +
+          `⏱️ Time: ${args[1]}\n` +
+          `📝 Reason: ${reason}\n` +
+          `🛡️ Staff: ${msg.author}`
+      }]
+    });
   }
 });
-
-client.on("messageCreate", async (msg) => {
+  
+  client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
   if (!msg.content.startsWith("!unmute")) return;
 
@@ -1203,70 +1196,65 @@ client.on("messageCreate", async (msg) => {
   const args = msg.content.split(" ").slice(1);
 
   if (!args[0]) {
-    return msg.reply("❌ Provide user ID or mention + reason");
+    return msg.reply("❌ Usage: !unmute <user> <reason>");
   }
 
-  // ===== USER =====
   const target =
     msg.mentions.members.first() ||
     await msg.guild.members.fetch(args[0]).catch(() => null);
 
   if (!target) return msg.reply("❌ User not found");
 
-  // ===== REASON =====
   const reason = args.slice(1).join(" ") || "No reason provided";
 
-  // ===== UNMUTE =====
+  // ===== REMOVE TIMEOUT =====
   try {
-    await target.timeout(null); // removes timeout
+    await target.timeout(null);
   } catch {
     return msg.reply("❌ Failed to unmute user");
   }
 
-  // ===== DM USER =====
+  // ===== DM =====
   try {
-    const dmEmbed = {
-      color: 0x2F3136,
-      title: "🔓 You have been unmuted",
-      description:
-        `**Server:** ${msg.guild.name}\n` +
-        `**Reason:** ${reason}\n\n` +
-        `You can now chat again.`
-    };
-
-    await target.send({ embeds: [dmEmbed] });
-  } catch {
-    // ignore if DMs off
-  }
+    await target.send({
+      embeds: [{
+        color: 0x2F3136,
+        title: "🔓 You have been unmuted",
+        description:
+          `**Server:** ${msg.guild.name}\n` +
+          `**Reason:** ${reason}`
+      }]
+    });
+  } catch {}
 
   // ===== MAIN MESSAGE =====
-  const embed = {
-    color: 0x2F3136,
-    description:
-      `<:unmuted:1496874189397823578> unmuted ${target}\n\n` +
-      `**Reason -** ${reason}`
-  };
+  await msg.channel.send({
+    embeds: [{
+      color: 0x2F3136,
+      description:
+        `<:unmuted:1496874189397823578> unmuted ${target}\n\n` +
+        `**Reason -** ${reason}`
+    }]
+  });
 
-  await msg.channel.send({ embeds: [embed] });
-
-  // ===== LOGGING =====
+  // ===== LOG =====
   const logChannel = msg.guild.channels.cache.get("1479885510255186045");
 
   if (logChannel) {
-    const logEmbed = {
-  color: 0x2F3136,
-  author: {
-    name: target.user.username,
-    icon_url: target.user.displayAvatarURL({ dynamic: true }),
-  },
-  description:
-    `🔓 **User Unmuted**\n\n` +
-    `👤 **User:** ${target}\n` +
-    `📝 **Reason:** ${reason}\n` +
-    `🛡️ **Staff:** ${msg.author}`
-};
-
-    logChannel.send({ embeds: [logEmbed] });
+    await logChannel.send({
+      embeds: [{
+        color: 0x2F3136,
+        author: {
+          name: target.user.username,
+          icon_url: target.user.displayAvatarURL({ dynamic: true })
+        },
+        description:
+          `🔓 **User Unmuted**\n\n` +
+          `👤 User: ${target}\n` +
+          `📝 Reason: ${reason}\n` +
+          `🛡️ Staff: ${msg.author}`
+      }]
+    });
   }
 });
   
