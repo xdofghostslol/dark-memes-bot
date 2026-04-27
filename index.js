@@ -1100,7 +1100,7 @@ client.on("messageCreate", async (msg) => {
   }
 });
 
-// ===== SLASH HANDLER (/)
+  // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
   if (!i.isChatInputCommand()) return;
 
@@ -1110,8 +1110,20 @@ client.on("interactionCreate", async (i) => {
   try {
     await cmd.execute(i);
   } catch (err) {
-    console.error(err);
-    i.reply({ content: "❌ Error", ephemeral: true });
+    console.error("SLASH ERROR:", err);
+
+    // avoid "interaction already replied" crash
+    if (i.replied || i.deferred) {
+      await i.followUp({
+        content: "❌ Something went wrong!",
+        ephemeral: true
+      }).catch(() => {});
+    } else {
+      await i.reply({
+        content: "❌ Something went wrong!",
+        ephemeral: true
+      }).catch(() => {});
+    }
   }
 });
 
