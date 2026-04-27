@@ -670,6 +670,8 @@ client.slash.set("giveall", {
 client.slash.set("announce", {
   name: "announce",
   description: "Send an announcement",
+  default_member_permissions: "0", // 🔒 hides from normal users
+
   options: [
     {
       name: "message",
@@ -679,7 +681,7 @@ client.slash.set("announce", {
     },
     {
       name: "channel",
-      description: "Channel to send in (optional)",
+      description: "Channel to send in",
       type: 7,
       required: false
     }
@@ -687,17 +689,27 @@ client.slash.set("announce", {
 
   async execute(i) {
 
-    // ===== PERMISSION =====
-    if (!isBypass(i.member)) {
+    // ===== STRICT ROLE CHECK =====
+    const allowedRoles = [
+      ROLES.OWNER,
+      ROLES.CO_OWNER,
+      ROLES.SERVER_MANAGER
+    ];
+
+    const hasPermission = i.member.roles.cache.some(role =>
+      allowedRoles.includes(role.id)
+    );
+
+    if (!hasPermission) {
       return i.reply({ content: "❌ No permission", ephemeral: true });
     }
 
     const message = i.options.getString("message");
     const channel = i.options.getChannel("channel") || i.channel;
 
-    // ===== GREY EMBED =====
+    // ===== EMBED =====
     const embed = {
-      color: 0x2F3136, // 🔥 grey (Discord dark theme style)
+      color: 0x2F3136, // grey
       title: `<:ann:1496885917288370186> announcement`,
       description: message,
       footer: {
@@ -709,6 +721,177 @@ client.slash.set("announce", {
     await channel.send({ embeds: [embed] });
 
     return i.reply({ content: "✅ Announcement sent", ephemeral: true });
+  }
+});
+
+client.slash.set("userinfo", {
+  name: "userinfo",
+  description: "Get user info",
+  default_member_permissions: "0",
+
+  options: [
+    { name: "user", type: 6, description: "Select user", required: false },
+    { name: "userid", type: 3, description: "User ID", required: false }
+  ],
+
+  async execute(i) {
+
+    // ===== STAFF CHECK =====
+    const allowedRoles = [
+      ROLES.OWNER,
+      ROLES.CO_OWNER,
+      ROLES.SERVER_MANAGER,
+      ROLES.ADMIN,
+      ROLES.MODERATOR,
+      ROLES.STAFF
+    ];
+
+    if (!i.member.roles.cache.some(r => allowedRoles.includes(r.id))) {
+      return i.reply({ content: "❌ No permission", ephemeral: true });
+    }
+
+    let user = i.options.getUser("user");
+    const userIdInput = i.options.getString("userid");
+
+    if (user && userIdInput) {
+      return i.reply({
+        content: "❌ Use either user or user ID",
+        ephemeral: true
+      });
+    }
+
+    if (!user && userIdInput) {
+      try {
+        user = await i.client.users.fetch(userIdInput);
+      } catch {
+        return i.reply({ content: "❌ Invalid user ID", ephemeral: true });
+      }
+    }
+
+    if (!user) user = i.user;
+
+    // ===== MEMBER =====
+    let member = null;
+    try {
+      member = await i.guild.members.fetch(user.id);
+    } catch {}
+
+    const username = user.globalName || user.username;
+    const avatar = user.displayAvatarURL({ dynamic: true });
+
+    const created = `<t:${Math.floor(user.createdTimestamp / 1000)}:R>`;
+    const joined = member
+      ? `<t:${Math.floor(member.joinedTimestamp / 1000)}:R>`
+      : "Not in server";
+
+    const displayName = member ? member.displayName : username;
+
+    // ===== STATUS =====
+    let status = "Offline";
+    if (member?.presence?.status) {
+      const map = {
+        online: "🟢 Online",
+        idle: "🌙 Idle",
+        dnd: "⛔ Do Not Disturb",
+        offline: "⚫ Offline"
+      };
+      status = map[member.presence.status] || "Offline";
+    }
+
+    // ===== ROLES =====
+    let roles = "No roles";
+    if (member) {
+      const roleList = member.roles.cache
+        .filter(r => r.id !== i.guild.id)
+        .map(r => `<@&${r.id}>`);
+
+      if (roleList.length) {
+        roles = roleList.slice(0, 10).join(", ");
+        if (roleList.length > 10) roles += " ...";
+      }
+    }
+
+    // ===== BADGES =====
+    const flags = user.flags?.toArray() || [];
+    const badgeMap = {
+      Staff: "🛠️ Staff",
+      Partner: "🤝 Partner",
+      Hypesquad: "🎉 HypeSquad",
+      BugHunterLevel1: "🐛 Bug Hunter",
+      BugHunterLevel2: "🐞 Bug Hunter+",
+      HypeSquadOnlineHouse1: "🏠 Bravery",
+      HypeSquadOnlineHouse2: "🏠 Brilliance",
+      HypeSquadOnlineHouse3: "🏠 Balance",
+      PremiumEarlySupporter: "💎 Early Supporter",
+      VerifiedBot: "🤖 Verified Bot",
+      ActiveDeveloper: "⚡ Dev"
+    };
+
+    const badges = flags.length
+      ? flags.map(f => badgeMap[f] || f).join(", ")
+      : "No badges";
+
+    // ===== MUTUAL SERVERS =====
+    const mutual = i.client.guilds.cache.filter(g =>
+      g.members.cache.has(user.id)
+    ).size;
+
+    // ===== BANNER =====
+    let banner = null;
+    try {
+      const fetched = await i.client.users.fetch(user.id, { force: true });
+      banner = fetched.bannerURL({ size: 1024 });
+    } catch {}
+
+    // ===== EMBED =====
+    const embed = {
+      color: 0x2F3136,
+      title: `<:executed:1496874383447429271> USER INFO`,
+      thumbnail: { url: avatar },
+      description:
+        `**Name** - ${username}\n` +
+        `**Display Name** - ${displayName}\n` +
+        `**Status** - ${status}\n` +
+        `**Badges** - ${badges}\n` +
+        `**Mutual Servers** - ${mutual}\n` +
+        `**Account Created** - ${created}\n` +
+        `**When Joined** - ${joined}\n` +
+        `**Roles** - ${roles}`
+    };
+
+    if (banner) embed.image = { url: banner };
+
+    return i.reply({ embeds: [embed] });
+  }
+});
+
+client.slash.set("avatar", {
+  name: "avatar",
+  description: "Show a user's avatar",
+  options: [
+    {
+      name: "user",
+      description: "Select a user",
+      type: 6,
+      required: false
+    }
+  ],
+
+  async execute(i) {
+    const user = i.options.getUser("user") || i.user;
+
+    const avatar = user.displayAvatarURL({
+      dynamic: true,
+      size: 1024
+    });
+
+    const embed = {
+      color: 0x2F3136,
+      title: `${user.username}'s Avatar`,
+      image: { url: avatar }
+    };
+
+    return i.reply({ embeds: [embed] });
   }
 });
 
