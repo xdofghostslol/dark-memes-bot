@@ -1238,23 +1238,22 @@ client.on("messageCreate", async (msg) => {
   // ===== LOG =====
   const logChannel = msg.guild.channels.cache.get("1479885510255186045");
 
-  if (logChannel) {
-    await logChannel.send({
-      embeds: [{
-        color: 0x2F3136,
-        author: {
-          name: target.user.username,
-          icon_url: target.user.displayAvatarURL({ dynamic: true })
-        },
-        description:
-          `🔓 **User Unmuted**\n\n` +
-          `👤 User: ${target}\n` +
-          `📝 Reason: ${reason}\n` +
-          `🛡️ Staff: ${msg.author}`
-      }]
-    });
-  }
-});
+if (logChannel) {
+  await logChannel.send({
+    embeds: [{
+      color: 0x2F3136,
+      author: {
+        name: target.user.username,
+        icon_url: target.user.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `🔓 **User Unmuted**\n\n` +
+        `👤 User: ${target}\n` +
+        `📝 Reason: ${reason}\n` +
+        `🛡️ Staff: ${msg.author}`
+    }]
+  });
+}
   
   // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
