@@ -482,6 +482,103 @@ client.slash.set("deposit", {
   }
 });
 
+client.slash.set("addspookycoins", {
+  name: "addspookycoins",
+  description: "Add spooky coins to a user",
+  options: [
+    {
+      name: "user",
+      description: "User to add coins to",
+      type: 6, // USER
+      required: true
+    },
+    {
+      name: "amount",
+      description: "Amount to add",
+      type: 4, // INTEGER
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    // ===== PERMISSION (only owner/co/manager) =====
+    if (!isBypass(i.member)) {
+      return i.reply({ content: "❌ No permission", ephemeral: true });
+    }
+
+    const target = i.options.getUser("user");
+    const amount = i.options.getInteger("amount");
+
+    if (amount <= 0) {
+      return i.reply({ content: "❌ Invalid amount", ephemeral: true });
+    }
+
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+
+    if (!db[target.id]) db[target.id] = { wallet: 0, bank: 0 };
+
+    // ✅ GENERATED coins (not taken from anywhere)
+    db[target.id].wallet += amount;
+
+    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+    return i.reply(
+      `<:mk:1496873898879221882> added \`${amount}\` to ${target.username}`
+    );
+  }
+});
+
+client.slash.set("removespookycoins", {
+  name: "removespookycoins",
+  description: "Remove spooky coins from a user",
+  options: [
+    {
+      name: "user",
+      description: "User to remove coins from",
+      type: 6, // USER
+      required: true
+    },
+    {
+      name: "amount",
+      description: "Amount to remove",
+      type: 4, // INTEGER
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    // ===== PERMISSION =====
+    if (!isBypass(i.member)) {
+      return i.reply({ content: "❌ No permission", ephemeral: true });
+    }
+
+    const target = i.options.getUser("user");
+    const amount = i.options.getInteger("amount");
+
+    if (amount <= 0) {
+      return i.reply({ content: "❌ Invalid amount", ephemeral: true });
+    }
+
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+
+    if (!db[target.id]) db[target.id] = { wallet: 0, bank: 0 };
+
+    // ❌ remove from wallet only
+    db[target.id].wallet -= amount;
+    if (db[target.id].wallet < 0) db[target.id].wallet = 0;
+
+    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+    return i.reply(
+      `<:mk:1496873898879221882> removed \`${amount}\` from ${target.username}`
+    );
+  }
+});
+
 // ===== READY =====
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
