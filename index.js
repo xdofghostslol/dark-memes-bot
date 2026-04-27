@@ -486,13 +486,22 @@ client.slash.set("deposit", {
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
+  // ✅ THIS LINE GOES HERE
   const commands = [...client.slash.values()].map(cmd => ({
     name: cmd.name,
-    description: cmd.description
+    description: cmd.description,
+    options: cmd.options || []
   }));
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
+  // clear old
+  await rest.put(
+    Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+    { body: [] }
+  );
+
+  // register new
   await rest.put(
     Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
     { body: commands }
