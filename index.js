@@ -1078,29 +1078,27 @@ client.on("messageCreate", async (msg) => {
 
   if (!isBypass(msg.member)) return;
 
-  const roleId = "1475423332865150986"; // QOTD role
+  const roleId = "1475423332865150986";
 
-  // optional: delete command message
-  await msg.delete().catch(() => {});
-
-  await msg.channel.send({
-    content: `<@&${roleId}>`
-  });
+await msg.channel.send({
+  content: `<@&${roleId}>`
 });
 
-  client.on("messageCreate", async (msg) => {
+client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
-  if (msg.content !== "!ragebait") return;
+  if (!msg.guild) return;
 
-  await msg.delete().catch(() => {});
+  if (msg.content === "!ragebait") {
+    await msg.delete().catch(() => {});
 
-  const gif = "https://tenor.com/m9vLORN739B.gif";
+    const gif = "https://tenor.com/m9vLORN739B.gif";
 
-  await msg.channel.send({
-    content: gif,
-    allowedMentions: { parse: [] }
-  });
-}); // ✅ THIS closes the event
+    await msg.channel.send({
+      content: gif,
+      allowedMentions: { parse: [] }
+    });
+  }
+});
 
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
