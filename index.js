@@ -1257,7 +1257,7 @@ client.on("messageCreate", async (msg) => {
   color: 0x2F3136,
   author: {
     name: target.user.username,
-    icon_url: target.user.displayAvatarURL({ dynamic: true }), // ✅ FIXED
+    icon_url: target.user.displayAvatarURL({ dynamic: true }),
   },
   description:
     `🔓 **User Unmuted**\n\n` +
