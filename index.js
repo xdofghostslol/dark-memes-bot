@@ -125,6 +125,363 @@ client.slash.set("work", {
   }
 });
 
+client.slash.set("rob", {
+  name: "rob",
+  description: "Rob a user's bank",
+  options: [
+    {
+      name: "user",
+      description: "User to rob",
+      type: 6, // USER
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    const target = i.options.getUser("user");
+
+    // ===== BASIC CHECKS =====
+    if (target.id === i.user.id) {
+      return i.reply({ content: "❌ You can't rob yourself", ephemeral: true });
+    }
+
+    if (target.bot) {
+      return i.reply({ content: "❌ You can't rob bots", ephemeral: true });
+    }
+
+    // ===== COOLDOWN =====
+    const cd = checkCooldown(i.user.id, "rob", 60000, i.member);
+    if (cd) {
+      return i.reply({ content: `⏳ Wait ${cd}s`, ephemeral: true });
+    }
+
+    // ===== DATABASE =====
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+
+    if (!db[i.user.id]) db[i.user.id] = { wallet: 0, bank: 0 };
+    if (!db[target.id]) db[target.id] = { wallet: 0, bank: 0 };
+
+    const user = db[i.user.id];
+    const victim = db[target.id];
+
+    // ===== REQUIREMENT =====
+    if (victim.bank < 500) {
+      return i.reply({
+        content: "❌ Target needs at least 500 in bank",
+        ephemeral: true
+      });
+    }
+
+    // ===== SUCCESS / FAIL =====
+    const success = Math.random() < 0.5;
+
+    if (success) {
+      const amount = Math.floor(Math.random() * (victim.bank * 0.4)) + 100;
+
+      victim.bank -= amount;
+      user.wallet += amount;
+
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+      return i.reply({
+        embeds: [
+          {
+            color: 0x00ff88,
+            description:
+              `<:papasus:1484838610879385740> **Rob Successful**\n\n` +
+              `You robbed ${target.username}'s bank and got **${amount} spooky coins**`
+          }
+        ]
+      });
+    } else {
+      const loss = 2000;
+
+      user.wallet -= loss;
+      if (user.wallet < 0) user.wallet = 0;
+
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+      return i.reply({
+        embeds: [
+          {
+            color: 0xff4444,
+            description:
+              `<:laugh:1496881613659967569> **Rob Failed**\n\n` +
+              `Police caught you and fined **${loss} spooky coins**`
+          }
+        ]
+      });
+    }
+  }
+});
+
+client.slash.set("crime", {
+  name: "crime",
+  description: "Do a crime for spooky coins",
+
+  async execute(i) {
+    const fs = require("fs");
+
+    // ===== DATABASE =====
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+    const userId = i.user.id;
+
+    if (!db[userId]) db[userId] = { wallet: 0, bank: 0, crimeCount: 0 };
+
+    const user = db[userId];
+
+    // ===== INIT EXTRA DATA =====
+    if (!user.crimeCount) user.crimeCount = 0;
+    if (!user.lastCrime) user.lastCrime = 0;
+
+    const now = Date.now();
+
+    // ===== COOLDOWN LOGIC =====
+    let cooldown = 50000; // 50s
+
+    if (user.crimeCount === 1) cooldown = 5 * 60 * 1000; // 5m
+    if (user.crimeCount >= 2) cooldown = 10 * 60 * 1000; // 10m
+
+    const timePassed = now - user.lastCrime;
+
+    if (timePassed < cooldown) {
+      const remaining = ((cooldown - timePassed) / 1000).toFixed(1);
+      return i.reply({ content: `⏳ Wait ${remaining}s`, ephemeral: true });
+    }
+
+    // ===== SUCCESS / FAIL =====
+    const success = Math.random() < 0.5;
+
+    // ===== SUCCESS =====
+    if (success) {
+      const amount = Math.floor(Math.random() * (678 - 500 + 1)) + 500;
+
+      user.wallet += amount;
+      user.crimeCount += 1;
+      user.lastCrime = now;
+
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+      return i.reply({
+        embeds: [
+          {
+            color: 0x00ff00,
+            description:
+              `<:trolled:1497924204694081626> **Crime Successful**\n\n` +
+              `You crimed and got **${amount} spooky coins**`
+          }
+        ]
+      });
+    }
+
+    // ===== FAIL =====
+    else {
+      user.crimeCount += 1;
+      user.lastCrime = now;
+
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+      return i.reply({
+        embeds: [
+          {
+            color: 0xff0000,
+            description:
+              `<:laugh:1496881613659967569> **Crime Failed**\n\n` +
+              `The police are near`
+          }
+        ]
+      });
+    }
+  }
+});
+
+client.slash.set("gamble", {
+  name: "gamble",
+  description: "Gamble your spooky coins",
+  options: [
+    {
+      name: "amount",
+      description: "Amount to gamble",
+      type: 4,
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    const amount = i.options.getInteger("amount");
+
+    // ===== COOLDOWN =====
+    const cd = checkCooldown(i.user.id, "gamble", 10000, i.member);
+    if (cd) {
+      return i.reply({ content: `⏳ Wait ${cd}s`, ephemeral: true });
+    }
+
+    // ===== DATABASE =====
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+    const userId = i.user.id;
+
+    if (!db[userId]) db[userId] = { wallet: 0, bank: 0 };
+
+    const user = db[userId];
+
+    // ===== VALIDATION =====
+    if (amount <= 0) {
+      return i.reply({ content: "❌ Enter a valid amount", ephemeral: true });
+    }
+
+    if (user.wallet < amount) {
+      return i.reply({ content: "❌ Not enough coins", ephemeral: true });
+    }
+
+    // ===== WIN / LOSE =====
+    const win = Math.random() < 0.6;
+
+    if (win) {
+      user.wallet += amount;
+
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+      return i.reply({
+        embeds: [
+          {
+            color: 0x00ff00,
+            description:
+              `<a:balance:1497983888792752229> **Gamble Won**\n\n` +
+              `You won **${amount} spooky coins**`
+          }
+        ]
+      });
+    } else {
+      user.wallet -= amount;
+
+      fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+      return i.reply({
+        embeds: [
+          {
+            color: 0xff0000,
+            description:
+              `<:fuck:1496881571247030293> **Gamble Lost**\n\n` +
+              `You lost **${amount} spooky coins**`
+          }
+        ]
+      });
+    }
+  }
+});
+
+client.slash.set("withdraw", {
+  name: "withdraw",
+  description: "Withdraw spooky coins from your bank",
+  options: [
+    {
+      name: "amount",
+      description: "Amount to withdraw",
+      type: 4, // INTEGER
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    const amount = i.options.getInteger("amount");
+
+    // ===== DATABASE =====
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+    const userId = i.user.id;
+
+    if (!db[userId]) db[userId] = { wallet: 0, bank: 0 };
+
+    const user = db[userId];
+
+    // ===== VALIDATION =====
+    if (amount <= 0) {
+      return i.reply({ content: "❌ Enter a valid amount", ephemeral: true });
+    }
+
+    if (user.bank < amount) {
+      return i.reply({ content: "❌ Not enough coins in bank", ephemeral: true });
+    }
+
+    // ===== TRANSFER =====
+    user.bank -= amount;
+    user.wallet += amount;
+
+    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+    // ===== RESPONSE =====
+    return i.reply({
+      embeds: [
+        {
+          color: 0x57F287,
+          description:
+            `<:bankeed:1497983802566512691> **Withdraw Successful**\n\n` +
+            `You withdrew **${amount} spooky coins**`
+        }
+      ]
+    });
+  }
+});
+
+client.slash.set("deposit", {
+  name: "deposit",
+  description: "Deposit spooky coins to your bank",
+  options: [
+    {
+      name: "amount",
+      description: "Amount to deposit",
+      type: 4, // INTEGER
+      required: true
+    }
+  ],
+
+  async execute(i) {
+    const fs = require("fs");
+
+    const amount = i.options.getInteger("amount");
+
+    // ===== DATABASE =====
+    const db = JSON.parse(fs.readFileSync("./eco.json"));
+    const userId = i.user.id;
+
+    if (!db[userId]) db[userId] = { wallet: 0, bank: 0 };
+
+    const user = db[userId];
+
+    // ===== VALIDATION =====
+    if (amount <= 0) {
+      return i.reply({ content: "❌ Enter a valid amount", ephemeral: true });
+    }
+
+    if (user.wallet < amount) {
+      return i.reply({ content: "❌ Not enough coins in wallet", ephemeral: true });
+    }
+
+    // ===== TRANSFER =====
+    user.wallet -= amount;
+    user.bank += amount;
+
+    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+    // ===== RESPONSE =====
+    return i.reply({
+      embeds: [
+        {
+          color: 0x57F287,
+          description:
+            `<a:balance:1497983888792752229> **Deposit Successful**\n\n` +
+            `You deposited **${amount} spooky coins**`
+        }
+      ]
+    });
+  }
+});
+
 // ===== READY =====
 client.once("ready", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
