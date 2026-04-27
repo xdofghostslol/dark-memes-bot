@@ -1258,7 +1258,6 @@ client.on("messageCreate", async (msg) => {
       author: {
         name: target.user.username,
         icon_url: target.user.displayAvatarURL({ dynamic: true })
-      },
       description:
         `🔓 **User Unmuted**\n\n` +
         `👤 **User:** ${target}\n` +
