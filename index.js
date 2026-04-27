@@ -638,41 +638,39 @@ client.slash.set("giveall", {
 
     for (let i2 = 0; i2 < memberArray.length; i2 += BATCH_SIZE) {
 
-      // ⏱ TIMEOUT CHECK
-      if (Date.now() - start > TIMEOUT) {
-        return i.editReply({
-          embeds: [
-            {
-              color: 0xff0000,
-              description:
-                `<:bruh:1463071943271120937> **Giveall Timed Out**\n\n` +
-                `Processed ${count} members`
-            }
-          ]
-        });
-      }
-
-      const batch = memberArray.slice(i2, i2 + BATCH_SIZE);
-
-      for (const member of batch) {
-        if (member.user.bot) continue;
-
-        if (!db[member.id]) db[member.id] = { wallet: 0, bank: 0 };
-
-        db[member.id].wallet += amount;
-        count++;
-      }
-
-      // small delay (keeps bot responsive)
-      await new Promise(r => setTimeout(r, 50));
-
-    fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
-
-    return i.editReply(
-      `<:mk:1496873898879221882> added \`${amount}\` spooky coins to all the members (${count})`
-    );
+  if (Date.now() - start > TIMEOUT) {
+    return i.editReply({
+      embeds: [
+        {
+          color: 0xff0000,
+          description: `Timed out`
+        }
+      ]
+    });
   }
-});
+
+  const batch = memberArray.slice(i2, i2 + BATCH_SIZE);
+
+  for (const member of batch) {
+    if (member.user.bot) continue;
+
+    if (!db[member.id]) db[member.id] = { wallet: 0, bank: 0 };
+
+    db[member.id].wallet += amount;
+    count++;
+  }
+
+  await new Promise(r => setTimeout(r, 50));
+}
+
+// ✅ after loop
+fs.writeFileSync("./eco.json", JSON.stringify(db, null, 2));
+
+return i.editReply(
+  `<:mk:1496873898879221882> added \`${amount}\` spooky coins to all members (${count})`
+);
+} // closes execute
+}); // closes client.slash.set
 
 client.slash.set("announce", {
   name: "announce",
