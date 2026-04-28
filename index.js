@@ -1004,18 +1004,35 @@ client.slash.set("shoot", {
 });
 
 // ===== READY =====
+const { REST, Routes } = require("discord.js");
+
 client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   try {
+    // 🔥 Build commands safely
+    const commands = [...client.slash.values()].map(cmd => ({
+      name: cmd.name,
+      description: cmd.description,
+      options: cmd.options || []
+    }));
+
+    // 🧪 Debug (IMPORTANT)
+    console.log("Slash commands loaded:", commands.length);
+    if (commands.length === 0) {
+      console.log("❌ No commands found. Check your loader.");
+      return;
+    }
+
     const rest = new REST({ version: "10" }).setToken(TOKEN);
 
+    // 🚀 Register
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands } // ONLY slash commands go here
+      { body: commands }
     );
 
-    console.log("✅ Slash commands registered");
+    console.log("✅ Slash commands registered successfully");
   } catch (err) {
     console.error("❌ Slash register error:", err);
   }
