@@ -1011,7 +1011,7 @@ client.once("ready", async () => {
     name: cmd.name,
     description: cmd.description,
     options: cmd.options || []
-  }));
+  });
 
   const rest = new REST({ version: "10" }).setToken(TOKEN);
 
@@ -1022,9 +1022,7 @@ client.once("ready", async () => {
   );
 
   console.log("✅ Slash commands registered");
-}();
-
-
+});
 
 
 // ===== PREFIX COMMANDS (!) =====
