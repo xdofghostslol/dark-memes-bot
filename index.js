@@ -1004,7 +1004,7 @@ client.slash.set("shoot", {
 });
 
 // ===== READY =====
-client.once("ready", async () => {
+client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   try {
@@ -1012,7 +1012,7 @@ client.once("ready", async () => {
 
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-      { body: commands }
+      { body: commands } // ONLY slash commands go here
     );
 
     console.log("✅ Slash commands registered");
