@@ -1092,8 +1092,6 @@ client.on("messageCreate", async (msg) => {
     return;
   }
 
-
-
 // ================== MUTE COMMAND START (SAFE - DO NOT TOUCH ABOVE) ==================
 if (cmd === "mute") {
   if (!msg.member.permissions.has("ModerateMembers")) {
@@ -1131,11 +1129,10 @@ if (cmd === "mute") {
     msg.author.id !== msg.guild.ownerId
   ) {
     return msg.reply("<:no:1496873950913761431> can't mute higher role or equal role");
-  }
+  } 
+// ===== PROTECTION END =====
 
-  // ===== PROTECTION END =====
-
-  try {
+try {
     await target.timeout(time * 60 * 1000, reason);
 
     const dmEmbed = {
