@@ -1094,6 +1094,176 @@ client.on("messageCreate", async (msg) => {
 
 }); // ===== END PREFIX COMMANDS (DO NOT DELETE) =====
 
+
+// ================== MUTE COMMAND START (SAFE - DO NOT TOUCH ABOVE) ==================
+if (cmd === "mute") {
+  if (!msg.member.permissions.has("ModerateMembers")) {
+    return msg.reply("No permission");
+  }
+
+  const target = msg.mentions.members.first() || msg.guild.members.cache.get(args[0]);
+  if (!target) return msg.reply("User not found");
+
+  const time = parseInt(args[1]);
+  if (!time) return msg.reply("Give time in minutes");
+
+  const reason = args.slice(2).join(" ") || "No reason";
+
+  // ===== PROTECTION START =====
+
+  if (target.id === msg.author.id) {
+    return msg.reply("You can't mute yourself");
+  }
+
+  if (target.user.bot) {
+    return msg.reply("Cannot mute bots");
+  }
+
+  if (target.id === msg.guild.ownerId) {
+    return msg.reply("Cannot mute server owner");
+  }
+
+  if (target.roles.highest.position >= msg.guild.members.me.roles.highest.position) {
+    return msg.reply("User has higher or equal role than bot");
+  }
+
+  if (
+    target.roles.highest.position >= msg.member.roles.highest.position &&
+    msg.author.id !== msg.guild.ownerId
+  ) {
+    return msg.reply("<:no:1496873950913761431> can't mute higher role or equal role");
+  }
+
+  // ===== PROTECTION END =====
+
+  try {
+    await target.timeout(time * 60 * 1000, reason);
+
+    const dmEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: msg.guild.name,
+        icon_url: msg.guild.iconURL({ dynamic: true })
+      },
+      description:
+        `<:muted:1496874136696262826> You were muted\n\n` +
+        `Time: ${time}m\n` +
+        `Reason: ${reason}`
+    };
+
+    const replyEmbed = {
+      color: 0x2F3136,
+      description:
+        `<:muted:1496874136696262826> User muted\n\n` +
+        `User: ${target}\n` +
+        `Time: ${time}m\n` +
+        `Reason: ${reason}\n` +
+        `Staff: ${msg.author}`
+    };
+
+    const logEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: target.user.username,
+        icon_url: target.user.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `<:muted:1496874136696262826> User muted\n\n` +
+        `User: ${target}\n` +
+        `Time: ${time}m\n` +
+        `Reason: ${reason}\n` +
+        `Staff: ${msg.author}`
+    };
+
+    target.send({ embeds: [dmEmbed] }).catch(() => {});
+    msg.reply({ embeds: [replyEmbed] });
+
+    const log = msg.guild.channels.cache.get("1479885510255186045");
+    if (log) log.send({ embeds: [logEmbed] });
+
+  } catch (err) {
+    console.error(err);
+    msg.reply("Failed");
+  }
+
+  return;
+}
+// ================== MUTE COMMAND END (DO NOT DELETE) ==================
+
+
+// ================== UNMUTE COMMAND START (SAFE - DO NOT TOUCH ABOVE) ==================
+if (cmd === "unmute") {
+  if (!msg.member.permissions.has("ModerateMembers")) {
+    return msg.reply("No permission");
+  }
+
+  const target = msg.mentions.members.first() || msg.guild.members.cache.get(args[0]);
+  if (!target) return msg.reply("User not found");
+
+  const reason = args.slice(1).join(" ") || "No reason";
+
+  // ===== PROTECTION START =====
+
+  if (target.id === msg.author.id) {
+    return msg.reply("You can't unmute yourself");
+  }
+
+  if (target.roles.highest.position >= msg.guild.members.me.roles.highest.position) {
+    return msg.reply("User has higher or equal role than bot");
+  }
+
+  // ===== PROTECTION END =====
+
+  try {
+    await target.timeout(null);
+
+    const dmEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: msg.guild.name,
+        icon_url: msg.guild.iconURL({ dynamic: true })
+      },
+      description:
+        `<:unmuted:1496874189397823578> You were unmuted\n\n` +
+        `Reason: ${reason}`
+    };
+
+    const replyEmbed = {
+      color: 0x2F3136,
+      description:
+        `<:unmuted:1496874189397823578> User unmuted\n\n` +
+        `User: ${target}\n` +
+        `Reason: ${reason}\n` +
+        `Staff: ${msg.author}`
+    };
+
+    const logEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: target.user.username,
+        icon_url: target.user.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `<:unmuted:1496874189397823578> User unmuted\n\n` +
+        `User: ${target}\n` +
+        `Reason: ${reason}\n` +
+        `Staff: ${msg.author}`
+    };
+
+    target.send({ embeds: [dmEmbed] }).catch(() => {});
+    msg.reply({ embeds: [replyEmbed] });
+
+    const log = msg.guild.channels.cache.get("1479885510255186045");
+    if (log) log.send({ embeds: [logEmbed] });
+
+  } catch (err) {
+    console.error(err);
+    msg.reply("Failed");
+  }
+
+  return;
+}); // ================== MESSAGE HANDLER END (DO NOT DELETE) ==================
+
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
   if (!i.isChatInputCommand()) return;
