@@ -1005,23 +1005,20 @@ client.slash.set("shoot", {
 
 // ===== READY =====
 client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
+  console.log(`✅ Logged in as ${client.user.tag}`);
 
-  const commands = [...client.slash.values()].map(cmd => ({
-    name: cmd.name,
-    description: cmd.description,
-    options: cmd.options || []
-  });
+  try {
+    const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-  const rest = new REST({ version: "10" }).setToken(TOKEN);
+    await rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: commands }
+    );
 
-  // ✅ ONLY THIS (no clearing before)
-  await rest.put(
-    Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
-    { body: commands }
-  );
-
-  console.log("✅ Slash commands registered");
+    console.log("✅ Slash commands registered");
+  } catch (err) {
+    console.error("❌ Slash register error:", err);
+  }
 });
 
 
