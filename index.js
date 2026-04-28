@@ -1021,7 +1021,6 @@ client.once("clientReady", async () => {
   }
 });
 
-
 // ===== PREFIX COMMANDS (!) =====
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
