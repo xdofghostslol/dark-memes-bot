@@ -1034,73 +1034,72 @@ client.on("messageCreate", async (msg) => {
   const args = msg.content.slice(1).trim().split(/ +/);
   const cmd = args.shift().toLowerCase();
 
-  // ===== PING =====
-if (cmd === "ping") {
-  const cd = checkCooldown(msg.author.id, "ping", 3000, msg.member);
-  if (cd) {
-    return msg.reply(`⏳ Wait ${cd}s`);
-  }
 
-  const sent = await msg.reply("🏓 Pinging...");
-
-  const latency = sent.createdTimestamp - msg.createdTimestamp;
-  const apiPing = Math.round(client.ws.ping);
-
-  await sent.edit(
-    `🏓 Pong!\n📡 Latency: ${latency}ms\n⚡ API: ${apiPing}ms`
-  );
-}
-
-client.on("messageCreate", async (msg) => {
-  if (msg.author.bot) return;
-  if (!msg.content.startsWith("!purge")) return;
-
-  if (!isBypass(msg.member)) return;
-
-  const args = msg.content.split(" ");
-  const amount = parseInt(args[1]);
-
-  if (!amount || amount < 1 || amount > 100) {
-    return msg.reply("❌ Provide a number between 1-100");
-  }
-
-  await msg.channel.bulkDelete(amount, true);
-
-  const reply = await msg.channel.send(`🧹 Cleared ${amount} messages`);
-
-  // auto delete message (fake ephemeral)
-  setTimeout(() => reply.delete().catch(() => {}), 3000);
-});
-  
-client.on("messageCreate", async (msg) => {
-  if (msg.author.bot) return;
-  if (msg.content !== "!pollping") return;
-
-  if (!isBypass(msg.member)) return;
-
-  const roleId = "1475423332865150986";
-
-await msg.channel.send({
-  content: `<@&${roleId}>`
-});
-
+// ================== MESSAGE HANDLER START (DO NOT TOUCH ABOVE) ==================
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
   if (!msg.guild) return;
 
+  // ---------- PING ----------
+  if (msg.content === "!ping") {
+    const sent = await msg.reply("🏓 Pinging...");
+
+    const msgLatency = sent.createdTimestamp - msg.createdTimestamp;
+    const apiLatency = Math.round(client.ws.ping);
+    const shardId = msg.guild.shardId ?? 0;
+
+    await sent.edit(
+      `🏓 Pong!\n` +
+      `📨 Message Latency: **${msgLatency}ms**\n` +
+      `🌐 API Latency: **${apiLatency}ms**\n` +
+      `🧩 Shard: **${shardId}**`
+    );
+    return;
+  }
+
+  // ---------- PURGE ----------
+  if (msg.content.startsWith("!purge")) {
+    if (!isBypass(msg.member)) return;
+
+    const args = msg.content.split(" ");
+    const amount = parseInt(args[1]);
+
+    if (!amount || amount < 1 || amount > 100) {
+      return msg.reply("❌ Provide a number between 1-100");
+    }
+
+    await msg.channel.bulkDelete(amount, true);
+
+    const reply = await msg.channel.send(`🧹 Cleared ${amount} messages`);
+    setTimeout(() => reply.delete().catch(() => {}), 3000);
+    return;
+  }
+
+  // ---------- POLL PING ----------
+  if (msg.content === "!pollping") {
+    if (!isBypass(msg.member)) return;
+
+    const roleId = "1475423332865150986";
+    await msg.delete().catch(() => {});
+    await msg.channel.send(`<@&${roleId}>`);
+    return;
+  }
+
+  // ---------- RAGEBAIT ----------
   if (msg.content === "!ragebait") {
     await msg.delete().catch(() => {});
 
     const gif = "https://tenor.com/m9vLORN739B.gif";
-
     await msg.channel.send({
       content: gif,
       allowedMentions: { parse: [] }
     });
+    return;
   }
-});
 
-  // ===== SLASH HANDLER (/)
+}); // ================== MESSAGE HANDLER END (DO NOT DELETE) ==================
+
+// ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
   if (!i.isChatInputCommand()) return;
 
@@ -1112,7 +1111,6 @@ client.on("interactionCreate", async (i) => {
   } catch (err) {
     console.error("SLASH ERROR:", err);
 
-    // avoid "interaction already replied" crash
     if (i.replied || i.deferred) {
       await i.followUp({
         content: "❌ Something went wrong!",
@@ -1125,6 +1123,10 @@ client.on("interactionCreate", async (i) => {
       }).catch(() => {});
     }
   }
-});
+}); // <<< END SLASH HANDLER (DO NOT TOUCH)
 
+// ===== SAFE ZONE BELOW (ADD NEW CODE ONLY HERE)
+
+
+// ===== LOGIN (ALWAYS KEEP AT VERY BOTTOM)
 client.login(process.env.TOKEN);
