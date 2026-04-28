@@ -1159,8 +1159,7 @@ if (!target.isCommunicationDisabled()) {
   }
 
   return;
-  })
-  ; // ================== MESSAGE HANDLER END ==================
+  }); // ================== MESSAGE HANDLER END ==================
 
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
