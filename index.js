@@ -1092,7 +1092,6 @@ client.on("messageCreate", async (msg) => {
     return;
   }
 
-}); // ===== END PREFIX COMMANDS (DO NOT DELETE) =====
 
 
 // ================== MUTE COMMAND START (SAFE - DO NOT TOUCH ABOVE) ==================
@@ -1262,7 +1261,7 @@ if (cmd === "unmute") {
   }
 
   return;
-}); // ================== MESSAGE HANDLER END (DO NOT DELETE) ==================
+  }); // ================== MESSAGE HANDLER END ==================
 
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
