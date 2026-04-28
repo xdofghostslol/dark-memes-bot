@@ -1004,13 +1004,10 @@ client.slash.set("shoot", {
 });
 
 // ===== READY =====
-const { REST, Routes } = require("discord.js");
-
 client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   try {
-    // ✅ build commands
     const commands = [...client.slash.values()].map(cmd => ({
       name: cmd.name,
       description: cmd.description,
@@ -1021,13 +1018,11 @@ client.once("clientReady", async () => {
 
     const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-    // clear old (optional but you wanted it)
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: [] }
     );
 
-    // register new
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
@@ -1038,7 +1033,6 @@ client.once("clientReady", async () => {
     console.error("❌ Register error:", err);
   }
 });
-
 // ===== PREFIX COMMANDS (!) =====
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
