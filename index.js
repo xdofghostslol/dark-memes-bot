@@ -1010,31 +1010,32 @@ client.once("clientReady", async () => {
   console.log(`✅ Logged in as ${client.user.tag}`);
 
   try {
-    // 🔥 Build commands safely
+    // ✅ build commands
     const commands = [...client.slash.values()].map(cmd => ({
       name: cmd.name,
       description: cmd.description,
       options: cmd.options || []
     }));
 
-    // 🧪 Debug (IMPORTANT)
-    console.log("Slash commands loaded:", commands.length);
-    if (commands.length === 0) {
-      console.log("❌ No commands found. Check your loader.");
-      return;
-    }
+    console.log("Loaded commands:", commands.length);
 
     const rest = new REST({ version: "10" }).setToken(TOKEN);
 
-    // 🚀 Register
+    // clear old (optional but you wanted it)
+    await rest.put(
+      Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
+      { body: [] }
+    );
+
+    // register new
     await rest.put(
       Routes.applicationGuildCommands(CLIENT_ID, GUILD_ID),
       { body: commands }
     );
 
-    console.log("✅ Slash commands registered successfully");
+    console.log("✅ Slash commands registered");
   } catch (err) {
-    console.error("❌ Slash register error:", err);
+    console.error("❌ Register error:", err);
   }
 });
 
