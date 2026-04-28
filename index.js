@@ -1024,24 +1024,20 @@ client.once("ready", async () => {
   console.log("✅ Slash commands registered");
 });
 
-// ===== PREFIX COMMANDS (!)
+
+
+
+// ===== PREFIX COMMANDS (!) =====
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
   if (!msg.guild) return;
-
   if (!msg.content.startsWith("!")) return;
 
   const args = msg.content.slice(1).trim().split(/ +/);
   const cmd = args.shift().toLowerCase();
 
-
-// ================== MESSAGE HANDLER START (DO NOT TOUCH ABOVE) ==================
-client.on("messageCreate", async (msg) => {
-  if (msg.author.bot) return;
-  if (!msg.guild) return;
-
   // ---------- PING ----------
-  if (msg.content === "!ping") {
+  if (cmd === "ping") {
     const sent = await msg.reply("🏓 Pinging...");
 
     const msgLatency = sent.createdTimestamp - msg.createdTimestamp;
@@ -1058,11 +1054,10 @@ client.on("messageCreate", async (msg) => {
   }
 
   // ---------- PURGE ----------
-  if (msg.content.startsWith("!purge")) {
+  if (cmd === "purge") {
     if (!isBypass(msg.member)) return;
 
-    const args = msg.content.split(" ");
-    const amount = parseInt(args[1]);
+    const amount = parseInt(args[0]);
 
     if (!amount || amount < 1 || amount > 100) {
       return msg.reply("❌ Provide a number between 1-100");
@@ -1076,7 +1071,7 @@ client.on("messageCreate", async (msg) => {
   }
 
   // ---------- POLL PING ----------
-  if (msg.content === "!pollping") {
+  if (cmd === "pollping") {
     if (!isBypass(msg.member)) return;
 
     const roleId = "1475423332865150986";
@@ -1086,7 +1081,7 @@ client.on("messageCreate", async (msg) => {
   }
 
   // ---------- RAGEBAIT ----------
-  if (msg.content === "!ragebait") {
+  if (cmd === "ragebait") {
     await msg.delete().catch(() => {});
 
     const gif = "https://tenor.com/m9vLORN739B.gif";
@@ -1097,7 +1092,7 @@ client.on("messageCreate", async (msg) => {
     return;
   }
 
-}); // ================== MESSAGE HANDLER END (DO NOT DELETE) ==================
+}); // ===== END PREFIX COMMANDS (DO NOT DELETE) =====
 
 // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
