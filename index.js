@@ -1097,9 +1097,91 @@ client.on("messageCreate", async (msg) => {
     });
     return;
   }
-}); // ✅ CLOSE messageCreate HERE
+  
 
-// ===== SLASH HANDLER (/)
+if (cmd === "warn") {
+  try {
+    if (!isBypass(msg.member)) return;
+
+    const targetUser =
+      msg.mentions.users.first() ||
+      client.users.cache.get(args[0]) ||
+      await client.users.fetch(args[0]).catch(() => null);
+
+    if (!targetUser) {
+      return msg.reply("User not found");
+    }
+
+    if (targetUser.id === msg.author.id) {
+      return msg.reply("You cannot warn yourself");
+    }
+
+    const member = msg.guild.members.cache.get(targetUser.id);
+    const reason = args.slice(1).join(" ") || "No reason provided";
+
+    // ===== WARN COUNT (memory)
+    if (!global.warns) global.warns = {};
+    if (!global.warns[targetUser.id]) global.warns[targetUser.id] = 0;
+    global.warns[targetUser.id]++;
+
+    const count = global.warns[targetUser.id];
+
+    // ===== DM
+    await targetUser.send(
+      `<:executed:1496874383447429271> warn issued\n\n` +
+      `User - ${targetUser.tag}\n` +
+      `Reason - ${reason}\n` +
+      `Total warns - ${count}`
+    ).catch(() => {});
+
+    // ===== CONFIRM EMBED
+    const confirmEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: targetUser.tag,
+        icon_url: targetUser.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `<:mk:1496873898879221882> **warn issued**\n\n` +
+        `User - <@${targetUser.id}>\n` +
+        `Display - ${member?.displayName || targetUser.username}\n` +
+        `Reason - **${reason}**\n` +
+        `Total warns - ${count}`
+    };
+
+    await msg.channel.send({ embeds: [confirmEmbed] });
+
+    // ===== LOG
+    const logEmbed = {
+      color: 0x2F3136,
+      author: {
+        name: targetUser.tag,
+        icon_url: targetUser.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `<:mk:1496873898879221882> **warn issued**\n\n` +
+        `User - <@${targetUser.id}> (${targetUser.id})\n` +
+        `Display - ${member?.displayName || targetUser.username}\n` +
+        `Reason - **${reason}**\n` +
+        `Total warns - ${count}\n` +
+        `Staff - <@${msg.author.id}>`
+    };
+
+    const logChannel = msg.guild.channels.cache.get("1479885510255186045");
+    if (logChannel) {
+      logChannel.send({ embeds: [logEmbed] }).catch(() => {});
+    }
+
+  } catch (err) {
+    console.error(err);
+    msg.reply("Error occurred").catch(() => {});
+  }
+return;
+  }
+
+}); // closes client.on("messageCreate")
+  
+  // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
   if (!i.isChatInputCommand()) return;
 
