@@ -59,7 +59,13 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers
+  ],
+  partials: [
+    Partials.Message,
+    Partials.Channel,
+    Partials.Reaction
   ]
 });
 
@@ -1351,7 +1357,226 @@ if (!i.isChatInputCommand()) return;
 }); // <<< END SLASH HANDLER (DO NOT TOUCH)
 
 // ===== SAFE ZONE BELOW (ADD NEW CODE ONLY HERE)
+// ===== LOGS + MESSAGE REWARDS =====
 
+const LOG_CHANNEL_ID = "1479885191953780888";
+
+function log(guild) {
+  return guild.channels.cache.get(LOG_CHANNEL_ID);
+}
+
+// =======================
+// 🗑️ MESSAGE DELETE
+// =======================
+client.on("messageDelete", async (msg) => {
+  if (!msg.guild || msg.author?.bot) return;
+
+  const ch = log(msg.guild);
+  if (!ch) return;
+
+  const embed = {
+    color: 0xff0000,
+    author: {
+      name: msg.author?.tag || "Unknown",
+      icon_url: msg.author?.displayAvatarURL({ dynamic: true })
+    },
+    description:
+      `🗑️ **Message Deleted**\n\n` +
+      `User: <@${msg.author?.id || "unknown"}>\n` +
+      `Channel: <#${msg.channel.id}>\n\n` +
+      `**Content:**\n${msg.content || "*No text*"}`,
+    timestamp: new Date()
+  };
+
+  if (msg.attachments?.first()) {
+    embed.image = { url: msg.attachments.first().url };
+  }
+
+  ch.send({ embeds: [embed] }).catch(() => {});
+});
+
+
+// =======================
+// ✏️ MESSAGE EDIT
+// =======================
+client.on("messageUpdate", async (oldMsg, newMsg) => {
+  if (!newMsg.guild || newMsg.author?.bot) return;
+  if (oldMsg.content === newMsg.content) return;
+
+  const ch = log(newMsg.guild);
+  if (!ch) return;
+
+  ch.send({
+    embeds: [{
+      color: 0xffa500,
+      author: {
+        name: newMsg.author.tag,
+        icon_url: newMsg.author.displayAvatarURL({ dynamic: true })
+      },
+      description:
+        `✏️ **Message Edited**\n\n` +
+        `User: <@${newMsg.author.id}>\n` +
+        `Channel: <#${newMsg.channel.id}>\n\n` +
+        `**Before:**\n${oldMsg.content || "*No text*"}\n\n` +
+        `**After:**\n${newMsg.content || "*No text*"}`,
+      timestamp: new Date()
+    }]
+  }).catch(() => {});
+});
+
+
+// =======================
+// 🧹 BULK DELETE
+// =======================
+client.on("messageDeleteBulk", async (messages) => {
+  const guild = messages.first()?.guild;
+  if (!guild) return;
+
+  const ch = log(guild);
+  if (!ch) return;
+
+  ch.send({
+    embeds: [{
+      color: 0x8b0000,
+      description:
+        `🧹 **Bulk Delete**\n\n` +
+        `Messages: ${messages.size}\n` +
+        `Channel: <#${messages.first().channel.id}>`,
+      timestamp: new Date()
+    }]
+  });
+});
+
+
+// =======================
+// 🧑 MEMBER UPDATE (NICK + ROLES)
+// =======================
+client.on("guildMemberUpdate", async (oldM, newM) => {
+  const ch = log(newM.guild);
+  if (!ch) return;
+
+  // nickname
+  if (oldM.nickname !== newM.nickname) {
+    ch.send({
+      embeds: [{
+        color: 0x3498db,
+        author: {
+          name: newM.user.tag,
+          icon_url: newM.user.displayAvatarURL({ dynamic: true })
+        },
+        description:
+          `🧑 **Nickname Changed**\n\n` +
+          `User: <@${newM.id}>\n\n` +
+          `Before: ${oldM.nickname || "None"}\n` +
+          `After: ${newM.nickname || "None"}`,
+        timestamp: new Date()
+      }]
+    });
+  }
+
+  // roles
+  const oldRoles = oldM.roles.cache;
+  const newRoles = newM.roles.cache;
+
+  const added = newRoles.filter(r => !oldRoles.has(r.id));
+  const removed = oldRoles.filter(r => !newRoles.has(r.id));
+
+  if (added.size || removed.size) {
+    ch.send({
+      embeds: [{
+        color: 0x9b59b6,
+        author: {
+          name: newM.user.tag,
+          icon_url: newM.user.displayAvatarURL({ dynamic: true })
+        },
+        description:
+          `🎭 **Roles Updated**\n\n` +
+          `User: <@${newM.id}>\n\n` +
+          (added.size ? `➕ Added: ${added.map(r => `<@&${r.id}>`).join(", ")}\n` : "") +
+          (removed.size ? `➖ Removed: ${removed.map(r => `<@&${r.id}>`).join(", ")}` : ""),
+        timestamp: new Date()
+      }]
+    });
+  }
+});
+
+
+// =======================
+// ⚙️ COMMAND LOGGER
+// =======================
+
+// slash
+client.on("interactionCreate", async (i) => {
+  if (!i.isChatInputCommand()) return;
+
+  const ch = log(i.guild);
+  if (!ch) return;
+
+  ch.send({
+    embeds: [{
+      color: 0x2ecc71,
+      description:
+        `⚙️ **Slash Command**\n\n` +
+        `User: <@${i.user.id}>\n` +
+        `/${i.commandName}`,
+      timestamp: new Date()
+    }]
+  }).catch(() => {});
+});
+
+// prefix + 💀 MESSAGE REWARDS
+client.on("messageCreate", async (msg) => {
+  if (!msg.guild || msg.author.bot) return;
+
+  // =======================
+  // 💰 MESSAGE REWARDS
+  // =======================
+  if (!data.users) data.users = {};
+  if (!data.users[msg.author.id]) {
+    data.users[msg.author.id] = { messages: 0, coins: 0 };
+  }
+
+  const user = data.users[msg.author.id];
+  user.messages += 1;
+
+  let reward = null;
+
+  if (user.messages === 100) reward = 1000;
+  if (user.messages === 300) reward = 1500;
+  if (user.messages === 500) reward = 3000;
+  if (user.messages === 1000) reward = 10000;
+
+  if (reward) {
+    user.coins += reward;
+
+    msg.channel.send(
+`\\m<:mk:1496873898879221882> 
+You reached ${user.messages} messages and got ${reward} spooky coins nice!
+-# chat more for more rewards`
+    ).catch(() => {});
+  }
+
+  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+
+  // =======================
+  // ⚙️ PREFIX LOGGER
+  // =======================
+  if (!msg.content.startsWith("!")) return;
+
+  const ch = log(msg.guild);
+  if (!ch) return;
+
+  ch.send({
+    embeds: [{
+      color: 0x2ecc71,
+      description:
+        `⚙️ **Prefix Command**\n\n` +
+        `User: <@${msg.author.id}>\n` +
+        `${msg.content}`,
+      timestamp: new Date()
+    }]
+  }).catch(() => {});
+});
 
 // ===== LOGIN (ALWAYS KEEP AT VERY BOTTOM)
 client.login(process.env.TOKEN);
