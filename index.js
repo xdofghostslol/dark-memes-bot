@@ -1041,20 +1041,24 @@ client.slash.set("warnings", {
   execute: async (i) => {
     try {
       let targetUser = i.options.getUser("user");
-      const idInput = i.options.getString("id");
+const idInput = i.options.getString("id");
 
-      if (!targetUser && idInput) {
-        targetUser = await i.client.users.fetch(idInput).catch(() => null);
-      }
+if (!targetUser && idInput) {
+  try {
+    targetUser = await i.client.users.fetch(idInput);
+  } catch {
+    targetUser = null;
+  }
+}
 
       if (!targetUser) {
         return i.reply({ content: "Provide a user or ID", ephemeral: true });
       }
 
-      const member = i.guild.members.cache.get(targetUser.id);
+      const member = await i.guild.members.fetch(targetUser.id).catch(() => null);
 
-      const userData = data.warns[targetUser.id];
-      const count = userData?.count || 0;
+      const userData = data?.warns?.[targetUser.id] || { count: 0, history: [] };
+const count = userData.count;
 
       // ===== NO WARNS
       if (!userData || count === 0) {
@@ -1075,12 +1079,10 @@ client.slash.set("warnings", {
       }
 
       // ===== HISTORY
-      const history = userData.history
-        ?.slice(-5)
-        .map((h, idx) =>
-          `#${idx + 1} • ${h.reason} • <@${h.staff}>`
-        )
-        .join("\n") || "No history";
+      const history = (userData.history || [])
+  .slice(-5)
+  .map((h, idx) => `#${idx + 1} • ${h.reason} - <@${h.staff}>`)
+  .join("\n") || "No history";
 
       // ===== EMBED
       const embed = {
