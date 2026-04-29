@@ -1126,13 +1126,12 @@ if (cmd === "warn") {
 
     const count = global.warns[targetUser.id];
 
-    // ===== DM
-    await targetUser.send(
-      `<:executed:1496874383447429271> warn issued\n\n` +
-      `User - ${targetUser.tag}\n` +
-      `Reason - ${reason}\n` +
-      `Total warns - ${count}`
-    ).catch(() => {});
+    // ===== DM =====
+await targetUser.send(
+  `<:executed:1496874383447429271> You have been warned in **dark memes**\n\n` +
+  `Reason : ${reason}\n` +
+  `Total warnings - ${count}`
+).catch(() => {});
 
     // ===== CONFIRM EMBED
     const confirmEmbed = {
