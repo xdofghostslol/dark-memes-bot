@@ -1,9 +1,8 @@
-const {
-  Client,
-  GatewayIntentBits,
-  REST,
-  Routes,
-  Collection
+const { 
+  Client, 
+  GatewayIntentBits, 
+  Partials, // ✅ ADD THIS
+  Collection 
 } = require("discord.js");
 
 const TOKEN = process.env.TOKEN;
