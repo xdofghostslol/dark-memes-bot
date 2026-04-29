@@ -10,6 +10,23 @@ const TOKEN = process.env.TOKEN;
 const CLIENT_ID = process.env.CLIENT_ID;
 const GUILD_ID = process.env.GUILD_ID;
 
+const fs = require("fs");
+const DATA_FILE = "./eco.json";
+
+let data = { warns: {} };
+
+// load file
+if (fs.existsSync(DATA_FILE)) {
+  try {
+    data = JSON.parse(fs.readFileSync(DATA_FILE));
+  } catch {
+    data = { warns: {} };
+  }
+}
+
+// safety (VERY IMPORTANT)
+if (!data.warns) data.warns = {};
+
 process.on("unhandledRejection", (err) => {
   console.error("UNHANDLED REJECTION:", err);
 });
@@ -1218,11 +1235,25 @@ if (cmd === "warn") {
     const reason = args.slice(1).join(" ") || "No reason provided";
 
     // ===== WARN COUNT (memory)
-    if (!global.warns) global.warns = {};
-    if (!global.warns[targetUser.id]) global.warns[targetUser.id] = 0;
-    global.warns[targetUser.id]++;
+    if (!data.warns[targetUser.id]) {
+  data.warns[targetUser.id] = {
+    count: 0,
+    history: []
+  };
+}
 
-    const count = global.warns[targetUser.id];
+data.warns[targetUser.id].count++;
+
+data.warns[targetUser.id].history.push({
+  reason: reason,
+  staff: msg.author.id,
+  time: Date.now()
+});
+
+const count = data.warns[targetUser.id].count;
+
+// SAVE FILE
+fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
 
     // ===== DM =====
 await targetUser.send(
