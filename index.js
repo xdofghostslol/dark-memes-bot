@@ -989,7 +989,7 @@ client.slash.set("shoot", {
 
     if (isFail) {
       return i.reply({
-        content: `<:laugh:1496881613659967569> u failed to shoot the ${target} - try again!`
+        content: `<:laugh:1496881613659967569> u failed to shoot ${target} - try again!`
       });
     }
 
@@ -1000,6 +1000,104 @@ client.slash.set("shoot", {
     return i.reply({
       content: `<:nice:1484839090708025396> Shot ${target} - ${part}`
     });
+  }
+});
+
+client.slash.set("warnings", {
+  name: "warnings",
+  description: "Check warnings of a user",
+  options: [
+    {
+      name: "user",
+      description: "Select user",
+      type: 6,
+      required: false
+    },
+    {
+      name: "id",
+      description: "User ID",
+      type: 3,
+      required: false
+    }
+  ],
+
+  execute: async (i) => {
+    try {
+      let targetUser = i.options.getUser("user");
+      const idInput = i.options.getString("id");
+
+      if (!targetUser && idInput) {
+        targetUser = await i.client.users.fetch(idInput).catch(() => null);
+      }
+
+      if (!targetUser) {
+        return i.reply({ content: "Provide a user or ID", ephemeral: true });
+      }
+
+      const member = i.guild.members.cache.get(targetUser.id);
+
+      const userData = data.warns[targetUser.id];
+      const count = userData?.count || 0;
+
+      // ===== NO WARNS
+      if (!userData || count === 0) {
+        return i.reply({
+          embeds: [{
+            color: 0x2F3136,
+            author: {
+              name: targetUser.tag,
+              icon_url: targetUser.displayAvatarURL({ dynamic: true })
+            },
+            description:
+              `User - <@${targetUser.id}>\n` +
+              `Display - ${member?.displayName || targetUser.username}\n\n` +
+              `√ No warnings in this server`
+          }],
+          ephemeral: true
+        });
+      }
+
+      // ===== HISTORY
+      const history = userData.history
+        ?.slice(-5)
+        .map((h, idx) =>
+          `#${idx + 1} • ${h.reason} • <@${h.staff}>`
+        )
+        .join("\n") || "No history";
+
+      // ===== EMBED
+      const embed = {
+        color: 0x2F3136,
+        author: {
+          name: targetUser.tag,
+          icon_url: targetUser.displayAvatarURL({ dynamic: true })
+        },
+        description:
+          `User - <@${targetUser.id}>\n` +
+          `Display - ${member?.displayName || targetUser.username}\n\n` +
+          `<:calm:1496874083525070848> **Total warnings - ${count}**\n\n` +
+          `History:\n${history}`
+      };
+
+      // ===== BUTTON
+      const row = {
+        type: 1,
+        components: [
+          {
+            type: 2,
+            style: 4,
+            label: "Clear Warnings",
+            custom_id: `clearwarn_${targetUser.id}`
+          }
+        ]
+      };
+
+      await i.reply({ embeds: [embed], components: [row] });
+
+    } catch (err) {
+      console.error(err);
+      i.reply({ content: "Error occurred", ephemeral: true }).catch(() => {});
+    }
   }
 });
 
@@ -1182,7 +1280,20 @@ return;
   
   // ===== SLASH HANDLER (/)
 client.on("interactionCreate", async (i) => {
-  if (!i.isChatInputCommand()) return;
+  // 🔹 handle buttons FIRST
+if (i.isButton()) {
+  if (i.customId.startsWith("clearwarn_")) {
+    const userId = i.customId.split("_")[1];
+
+    delete data.warns[userId];
+    fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2));
+
+    return i.reply({ content: "Warnings cleared", ephemeral: true });
+  }
+}
+
+// 🔹 then slash commands
+if (!i.isChatInputCommand()) return;
 
   const cmd = client.slash.get(i.commandName);
   if (!cmd) return;
