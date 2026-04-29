@@ -1090,7 +1090,7 @@ client.on("messageCreate", async (msg) => {
   if (cmd === "ragebait") {
     await msg.delete().catch(() => {});
 
-    const gif = "https://tenor.com/m9vLORN739B.gif";
+    const gif = "https://media.tenor.com/n9y3mXz0vNB/tenor.gif";
     await msg.channel.send({
       content: gif,
       allowedMentions: { parse: [] }
