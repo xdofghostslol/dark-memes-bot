@@ -2314,10 +2314,12 @@ const { REST, Routes } = require("discord.js");
 
 module.exports = (client) => {
 
-  client.once("clientReady", async () => {
+  client.once("ready", async () => {
     console.log(`Logged in as ${client.user.tag}`);
 
     try {
+
+      const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
 
       const commands = [...client.slash.values()].map(cmd => ({
         name: cmd.name,
@@ -2325,7 +2327,7 @@ module.exports = (client) => {
         options: cmd.options || []
       }));
 
-      console.log("Commands loaded:", commands.length)
+      console.log("Commands loaded:", commands.length);
 
       await rest.put(
         Routes.applicationGuildCommands(
@@ -2342,6 +2344,7 @@ module.exports = (client) => {
     }
   });
 
+};
 // ===== PREFIX COMMANDS (!) =====
 client.on("messageCreate", async (msg) => {
   if (msg.author.bot) return;
