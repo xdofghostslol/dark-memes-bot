@@ -2325,9 +2325,7 @@ module.exports = (client) => {
         options: cmd.options || []
       }));
 
-      console.log("Commands loaded:", commands.length);
-
-      const rest = new REST({ version: "10" }).setToken(process.env.TOKEN);
+      console.log("Commands loaded:", commands.length)
 
       await rest.put(
         Routes.applicationGuildCommands(
